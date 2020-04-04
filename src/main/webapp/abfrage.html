@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Abfrage</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script type="javascript">
+        $(document).ready(function(){
+            console.log("test");
+            $("#send").on("click", function(){
+                var arr = {name:"",adresse:"",plz:"12345",ort:"",ansprechpartner:"",tel:"",fax:"",mail:"",url:"",kontaktart:"Email",option1:"Abholung mit Kühlfahrzeug"};
+                $.ajax({
+                    url : "/tafelhilfe_connector_war_exploded/askForHelp/",
+                    type : "POST",
+                    datatype : "json",
+                    data : arr,
+                    success : function(msg){
+                        console.log("send");
+                    },
+                    error: function(xhr){
+                        console.log("bla");
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+<button id ="send">Send</button>
+
+</body>
+</html>
