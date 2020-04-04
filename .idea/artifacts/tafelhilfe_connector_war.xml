@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="tafelhilfe_connector:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>tafelhilfe_connector</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="tafelhilfe_connector-1.0-SNAPSHOT.war">
+      <element id="artifact" artifact-name="tafelhilfe_connector:war exploded" />
+    </root>
+  </artifact>
+</component>
