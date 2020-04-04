@@ -26,7 +26,6 @@ public class Connector extends HttpServlet {
                 po.postWirHelfen();
             }
         }
-       response.
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
