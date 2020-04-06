@@ -15,13 +15,10 @@ import java.io.IOException;
 @WebServlet(name = "Connector")
 public class Connector extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //System.out.println(request);
-        StringBuffer jb = new StringBuffer();
-        String line = null;
-        JSONObject jsonObject = null;
-        Postobjekt po = new Postobjekt(request.getParameter("name"),request.getParameter("address"), request.getParameter("plz"), request.getParameter("ort"), request.getParameter("anpsrechpartner"), request.getParameter("tel"), request.getParameter("fax"), request.getParameter("mail"), request.getParameter("url"), request.getParameter("kontaktart"), request.getParameter("option1"), request.getParameter("option2"), request.getParameter("option3"), request.getParameter("option4"), request.getParameter("kommentar"));
+        Postobjekt po = new Postobjekt(request.getParameter("name"),request.getParameter("adresse"), request.getParameter("plz"), request.getParameter("ort"), request.getParameter("ansprechpartner"), request.getParameter("tel"), request.getParameter("fax"), request.getParameter("mail"), request.getParameter("url"), request.getParameter("kontaktart"), request.getParameter("option1"), request.getParameter("option2"), request.getParameter("option3"), request.getParameter("option4"), request.getParameter("kommentar"));
        if(po != null){
-            if(po.verify()){
+            if(po.verify())
+            {
                 po.postQuarantaeneHelden();
                 po.postWirHelfen();
             }
