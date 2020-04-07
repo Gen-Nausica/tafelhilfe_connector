@@ -8,7 +8,7 @@
         $(document).ready(function(){
             console.log("test");
             $("#send").on("click", function(){
-                var arr = {name:"",adresse:"",plz:"12345",ort:"",ansprechpartner:"",tel:"",fax:"",mail:"",url:"",kontaktart:"Email",option1:"Abholung mit Kühlfahrzeug"};
+                var arr = {name:"Testy McTestface",adresse:"",plz:"12345",ort:"München",ansprechpartner:"",tel:"12345678",fax:"87654321",mail:"",url:"",kontaktart:"Email",option1:"Abholung mit Kühlfahrzeug", option2:"",option3:"",option4:"", kommentar:"Jennys Test"};
                 $.ajax({
                     url : "/tafelhilfe_connector_war_exploded/askForHelp/",
                     type : "POST",

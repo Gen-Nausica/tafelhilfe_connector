@@ -92,32 +92,45 @@ public class Postobjekt {
     }
 
     public boolean insertIntoDB(){
+        //insert data into table "Anfragen"
+        insertIntoAnfragen();
         //create needed tables, if they don't already exist
-        if(createTables()){
+        /*if(createTables()){
             log.info("table created");
             //insert values into db
-            //insert into Anfragen
-            Table table = dynamoDB.getTable("Anfragen");
-            Map<String,AttributeValue> attributeValues = new HashMap<>();
-            for(String i : params.keySet()){
-                try
-                {
-                    log.info("Adding a new item...");
-                    PutItemOutcome outcome = table.putItem(new Item().withPrimaryKey("AnfrageId", generateAnfrageId()).withString(i, params.get(i)));
-                }
-                catch(Exception e){
-                    log.info("Unable to add item");
-                    log.info(e.getMessage());
-                }
-            }
-
-
-
             return true;
         }
         else
         {
             return false;
+        }*/
+        return true;
+    }
+
+    private void insertIntoAnfragen() {
+        //insert into Anfragen
+        log.info("insert into Anfragen");
+        Table table = dynamoDB.getTable("Anfragen");
+        Map<String,AttributeValue> attributeValues = new HashMap<>();
+        Item item = new Item();
+        item.withPrimaryKey("AnfrageId", generateAnfrageId());
+
+        for(Map.Entry<String, String> entry : params.entrySet()){
+            if(!entry.getKey().equals("") && !entry.getValue().equals(""))
+            {
+                item.withString(entry.getKey(), entry.getValue());
+                log.info("Key: "+entry.getKey());
+                log.info("Value: "+entry.getValue());
+            }
+        }
+        try
+        {
+            log.info("Adding a new item...");
+            PutItemOutcome outcome = table.putItem(item);
+        }
+        catch(Exception e){
+            log.info("Unable to add item");
+            log.info(e.getMessage());
         }
     }
 
