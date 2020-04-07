@@ -34,6 +34,8 @@ public class Postobjekt {
     private AmazonDynamoDB client;
     private DynamoDB dynamoDB;
 
+    private String uuid;
+
 
 
     private static final Logger log = Logger.getLogger(Postobjekt.class.getName());
@@ -76,6 +78,8 @@ public class Postobjekt {
 
         this.client =AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_WEST_1).build();
         this.dynamoDB = new DynamoDB(client);
+
+        this.uuid = generateAnfrageId();
     }
 
     public boolean postQuarantaeneHelden(){
@@ -83,7 +87,7 @@ public class Postobjekt {
         log.info("in postQuarantaenehelden");
         insertIntoDB();
         log.info("after insterDB");
-        return posted;
+        return true;
     }
 
     public boolean postWirHelfen(){
@@ -95,16 +99,16 @@ public class Postobjekt {
         //insert data into table "Anfragen"
         insertIntoAnfragen();
         //create needed tables, if they don't already exist
-        /*if(createTables()){
+        if(createTables()){
             log.info("table created");
             //insert values into db
+            insertIntoQH();
             return true;
         }
         else
         {
             return false;
-        }*/
-        return true;
+        }
     }
 
     private void insertIntoAnfragen() {
@@ -113,7 +117,7 @@ public class Postobjekt {
         Table table = dynamoDB.getTable("Anfragen");
         Map<String,AttributeValue> attributeValues = new HashMap<>();
         Item item = new Item();
-        item.withPrimaryKey("AnfrageId", generateAnfrageId());
+        item.withPrimaryKey("AnfrageId", uuid);
 
         for(Map.Entry<String, String> entry : params.entrySet()){
             if(!entry.getKey().equals("") && !entry.getValue().equals(""))
@@ -142,7 +146,7 @@ public class Postobjekt {
     private boolean createTables() {
         //check, if table exists
         if(checkExists("Quarantaenehelden")){
-            return false;
+            return true;
         }
         else
         {
@@ -152,13 +156,8 @@ public class Postobjekt {
             {
                 System.out.println("Attempting to create table; please wait...");
                 Table table = dynamoDB.createTable(tableName,
-                        Arrays.asList(new KeySchemaElement("id", KeyType.HASH), // Partition
-                                // key
-                                new KeySchemaElement("plz", KeyType.RANGE),// Sort key
-                                new KeySchemaElement("message", KeyType.RANGE)),//Message
-                        Arrays.asList(new AttributeDefinition("id", ScalarAttributeType.N),
-                                new AttributeDefinition("plz", ScalarAttributeType.S),
-                                new AttributeDefinition("message", ScalarAttributeType.S)),
+                        Arrays.asList(new KeySchemaElement("AnfrageId", KeyType.HASH)),//Message
+                        Arrays.asList(new AttributeDefinition("AnfrageId", ScalarAttributeType.S)),
                         new ProvisionedThroughput(10L, 10L));
                 table.waitForActive();
                 log.info("Success.  Table status: " + table.getDescription().getTableStatus());
@@ -181,18 +180,44 @@ public class Postobjekt {
         {
             ItemCollection <ScanOutcome> items = table.scan(scanSpec);
 
-            Iterator<Item> iter = items.iterator();
-            while(iter.hasNext()){
-                temp = true;
-            }
+            temp = true;
         }
         catch(Exception e)
         {
-            log.info("Error while scanning table Anfragen");
+            log.info("Table "+tableName+" doesn't exist");
             log.info(e.getMessage());
-            temp = true;
+            temp = false;
         }
         return temp;
+    }
+
+    public void insertIntoQH(){
+        //insert into Quarantaenehelden
+        log.info("insert into Quarantaenehelden");
+        Table table = dynamoDB.getTable("Quarantaenehelden");
+        Map<String,AttributeValue> attributeValues = new HashMap<>();
+        Item item = new Item();
+        item.withPrimaryKey("AnfrageId", uuid);
+
+        item.withString("plz", plz);
+        item.withString("message", getQHMessage());
+        item.withString("name", name);
+        try
+        {
+            log.info("Adding a new item...");
+            PutItemOutcome outcome = table.putItem(item);
+        }
+        catch(Exception e){
+            log.info("Unable to add item");
+            log.info(e.getMessage());
+        }
+    }
+
+    private String getQHMessage() {
+        //ToDO: Check, which options are empty and only list those who are not
+        String message = "Die Tafel "+this.name+" sucht Helfer für: "+this.option1+", "+this.option2+", "+this.option3+" und "+this.option4+". Wir sind für jede Hilfe dankbar!";
+
+        return message;
     }
 
 

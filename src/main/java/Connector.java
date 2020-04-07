@@ -10,16 +10,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 
 @WebServlet(name = "Connector")
 public class Connector extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        PrintWriter r = response.getWriter();
         Postobjekt po = new Postobjekt(request.getParameter("name"),request.getParameter("adresse"), request.getParameter("plz"), request.getParameter("ort"), request.getParameter("ansprechpartner"), request.getParameter("tel"), request.getParameter("fax"), request.getParameter("mail"), request.getParameter("url"), request.getParameter("kontaktart"), request.getParameter("option1"), request.getParameter("option2"), request.getParameter("option3"), request.getParameter("option4"), request.getParameter("kommentar"));
        if(po != null){
             if(po.verify())
             {
-                po.postQuarantaeneHelden();
+                if(po.postQuarantaeneHelden()){
+                    r.append("Successfully posted to Quarantänehelden");
+                }
                 po.postWirHelfen();
             }
         }
