@@ -7,8 +7,21 @@ import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.model.*;
 import netscape.javascript.JSObject;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -39,6 +52,13 @@ public class Postobjekt {
 
 
     private static final Logger log = Logger.getLogger(Postobjekt.class.getName());
+
+    //Zugangsdaten Quarantaenehelden
+    private static final String qhEmail = "pfeifferjenny89@gmail.com";
+    private static final String qhPwd = "UZmG5BMDZCU6rgv";
+    //ToDo: Check, if we can use the firebase key
+    private static final String qhFbKey = "AIzaSyDqLWU3E81aqTqEvps7yc_bQOfPOZQzGEE";
+    private String secureToken;
 
 
     public Postobjekt(String name, String address, String plz, String ort, String ansprechpartner, String tel, String fax, String mail, String url, String kontaktart, String option1, String option2, String option3, String option4, String kommentar){
@@ -80,22 +100,75 @@ public class Postobjekt {
         this.dynamoDB = new DynamoDB(client);
 
         this.uuid = generateAnfrageId();
+
+        this.secureToken = "";
     }
 
-    public boolean postQuarantaeneHelden(){
+    public boolean postQuarantaeneHelden()
+    {
         boolean posted = false;
         log.info("in postQuarantaenehelden");
         insertIntoDB();
         log.info("after insterDB");
+        logInQH();
+        log.info("logged into Quarantaenehelden");
+        //createPostQH();
+        log.info("created post for Quarantaenehelden");
+        //postQH();
+        log.info("posted QH");
         return true;
     }
 
-    public boolean postWirHelfen(){
+    private void logInQH()
+    {
+        HttpClient client = HttpClients.createDefault();
+        HttpPost httppost = new HttpPost("https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword");
+        try
+        {
+            List<NameValuePair> data = new ArrayList<NameValuePair>();
+            data.add(new BasicNameValuePair("key", qhFbKey));
+            data.add(new BasicNameValuePair("email", qhEmail));
+            data.add(new BasicNameValuePair("password", qhPwd));
+            data.add(new BasicNameValuePair("returnSecureToken", "true"));
+
+            httppost.setEntity(new UrlEncodedFormEntity(data, "UTF-8"));
+
+
+            HttpResponse response = client.execute(httppost);
+            HttpEntity entity = response.getEntity();
+            if(entity != null)
+            {
+                try(InputStream instream = entity.getContent())
+                {
+                    BufferedReader streamReader = new BufferedReader(new InputStreamReader(instream, "UTF-8"));
+                    StringBuilder sB = new StringBuilder();
+
+                    String inputString;
+                    while((inputString = streamReader.readLine()) != null)
+                    {
+                        sB.append(inputString);
+                    }
+                    JSONObject answer = new JSONObject(sB.toString());
+                    if(answer != null){
+                        this.secureToken = answer.getString("idToken");
+                    }
+                }
+            }
+            log.info("idToken: "+secureToken);
+        }
+        catch (IOException e) {
+            log.info(e.getMessage());
+        }
+    }
+
+    public boolean postWirHelfen()
+    {
         boolean posted = false;
         return posted;
     }
 
-    public boolean insertIntoDB(){
+    public boolean insertIntoDB()
+    {
         //insert data into table "Anfragen"
         insertIntoAnfragen();
         //create needed tables, if they don't already exist
@@ -111,7 +184,8 @@ public class Postobjekt {
         }
     }
 
-    private void insertIntoAnfragen() {
+    private void insertIntoAnfragen()
+    {
         //insert into Anfragen
         log.info("insert into Anfragen");
         Table table = dynamoDB.getTable("Anfragen");
@@ -143,7 +217,8 @@ public class Postobjekt {
         return UUID.randomUUID().toString();
     }
 
-    private boolean createTables() {
+    private boolean createTables()
+    {
         //check, if table exists
         if(checkExists("Quarantaenehelden")){
             return true;
