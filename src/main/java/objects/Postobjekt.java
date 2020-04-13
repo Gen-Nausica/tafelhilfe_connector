@@ -6,9 +6,11 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.model.*;
-import netscape.javascript.JSObject;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+
+
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -17,11 +19,13 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.FormElement;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -54,11 +58,13 @@ public class Postobjekt {
     private static final Logger log = Logger.getLogger(Postobjekt.class.getName());
 
     //Zugangsdaten Quarantaenehelden
-    private static final String qhEmail = "pfeifferjenny89@gmail.com";
-    private static final String qhPwd = "UZmG5BMDZCU6rgv";
+    private static final String qhEmail = ""; //create account for test- and for liveserver
+    private static final String qhPwd = "";
     //ToDo: Check, if we can use the firebase key
+    //firebase-key staging
     private static final String qhFbKey = "AIzaSyDqLWU3E81aqTqEvps7yc_bQOfPOZQzGEE";
     private String secureToken;
+    private String askForHelpURL = "http://localhost:3000/#/ask-for-help";
 
 
     public Postobjekt(String name, String address, String plz, String ort, String ansprechpartner, String tel, String fax, String mail, String url, String kontaktart, String option1, String option2, String option3, String option4, String kommentar){
@@ -96,8 +102,8 @@ public class Postobjekt {
 
         log.info("constructor Postobjekt");
 
-        this.client =AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_WEST_1).build();
-        this.dynamoDB = new DynamoDB(client);
+        this.client = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.EU_WEST_1).build();
+        this.dynamoDB = new DynamoDB(this.client);
 
         this.uuid = generateAnfrageId();
 
@@ -108,20 +114,85 @@ public class Postobjekt {
     {
         boolean posted = false;
         log.info("in postQuarantaenehelden");
+
+        //insert data from json into Anfragen- and Quarantaenehelden-DB
         insertIntoDB();
-        log.info("after insterDB");
+        log.info("after instertDB");
+
+        //not sure if needed: Log into Quarantaenehelden with username and password. Returned id-key is saved as parameter
         logInQH();
         log.info("logged into Quarantaenehelden");
-        //createPostQH();
-        log.info("created post for Quarantaenehelden");
-        //postQH();
+
+        //Post to quarantaenehelden.de
+        postQH(this.plz, getQHMessage());
         log.info("posted QH");
         return true;
     }
 
+
+    /*
+    ** current strategy:  Load page via request, fill out form and send form.
+    * current problem: contents of webpage are loaded dynamically, so form isn't in html and therefore can't be send
+    * solution1: Find a way to load webpage with javascript and go on as planned
+    * solution2: send post to firebase-API -> needs to be discussed with quarantaenehelden-developers
+     */
+    private void postQH(String plz, String qhMessage)
+    {
+        try
+        {
+
+            //Load page including script generated content
+            WebClient cl = new WebClient();
+            HtmlPage page = cl.getPage(new File(this.askForHelpURL).toURI().toURL());
+
+            Document doc = Jsoup.parse(page.asXml());
+            log.info(doc.select("form.p-4").toString());
+
+/*
+**Load page as html and parse it - problem: all content on the page is generated dynamically
+*
+*
+            Connection.Response resp = Jsoup.connect(this.askForHelpURL) //
+                    .timeout(30000) //
+                    .method(Connection.Method.GET) //
+                    .execute();
+
+
+
+            // * Find the form
+            Document responseDocument = resp.parse();
+            Element pform = responseDocument.select("form.p-4").first();
+            //Element pform = doc.select("form.p-4").first();
+            FormElement form = (FormElement) pform;
+
+            // then "type" plz ...
+            Element plzField = form.select("#location-search-input").first();
+            plzField.val(plz);
+
+            //then type message
+            Element messageField = form.select(".border").first();
+            messageField.val(qhMessage);
+
+            //send form
+            Connection.Response postActionResponse = form.submit()
+                    .cookies(resp.cookies())
+                    .execute();
+
+
+
+            log.info(postActionResponse.parse().html());
+
+ */
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
     private void logInQH()
     {
-        HttpClient client = HttpClients.createDefault();
+        HttpClient hClient = HttpClients.createDefault();
         HttpPost httppost = new HttpPost("https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword");
         try
         {
@@ -134,7 +205,7 @@ public class Postobjekt {
             httppost.setEntity(new UrlEncodedFormEntity(data, "UTF-8"));
 
 
-            HttpResponse response = client.execute(httppost);
+            HttpResponse response = hClient.execute(httppost);
             HttpEntity entity = response.getEntity();
             if(entity != null)
             {
@@ -297,7 +368,7 @@ public class Postobjekt {
 
 
     /*
-*For later: If any additional validation is necessary
+*For later: If any additional validation is necessary, right now, verify() always returns true
  */
     public boolean verify(){
         boolean dataVerified = true;
