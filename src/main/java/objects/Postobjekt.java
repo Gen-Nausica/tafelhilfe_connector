@@ -62,7 +62,7 @@ public class Postobjekt {
     private static final String qhPwd = "";
     //ToDo: Check, if we can use the firebase key
     //firebase-key staging
-    private static final String qhFbKey = "AIzaSyDqLWU3E81aqTqEvps7yc_bQOfPOZQzGEE";
+    private static final String qhFbKey = {firebase_key};
     private String secureToken;
     private String askForHelpURL = "http://localhost:3000/#/ask-for-help";
 
